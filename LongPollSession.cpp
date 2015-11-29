@@ -23,8 +23,15 @@ LongPollSession::~LongPollSession()
 
 void LongPollSession::Start()
 {
+    std::cout << "Start" << std::endl;
     action = true;
-    GetLongPollServer();
+    while(true)
+    {
+        if(GetLongPollServer())
+        {
+            break;
+        }
+    }
     rapidjson::Document document;
     std::string urlToConnect = "https://"+ this->Response.server +"?act=a_check"
             "&key=" + this->Response.key +
@@ -34,9 +41,12 @@ void LongPollSession::Start()
     std::list<Messages> tmpList;
     while(action)
     {
-        const char *tmp = GetResponseString(urlToConnect).c_str();
-        std::string response = tmp;
+//        std::cout << ">> Urlstring: " + urlToConnect << std::endl;
+        std::string response = GetResponseString(urlToConnect);
+        const char *tmp = response.c_str();
+//        std::cout << ">> Response 1: " + response << std::endl;
         document.Parse<0>(tmp);
+
         if (document.HasMember("ts")) {
             this->Response.ts = document["ts"].GetInt();
 //            std::cout << Response.ts << std::endl;
@@ -46,15 +56,17 @@ void LongPollSession::Start()
                        "&ts=" + std::to_string(this->Response.ts) +
                        "&wait=25"
                        "&mode=0";
-
+//        std::cout << ">> Response: " + response << std::endl;
         tmpList = Messages::GetMessageList(response);
         for(auto c : tmpList)
         {
             queueOfMessages.push(c);
-            std::cout << c.from_id << " :: " + c.text << std::endl;
+            //std::cout << ">> " + queueOfMessages.front().text << std::endl;
+//            queueOfMessages.pop();
 
         }
     }
+    std::cout << "Thread was killed" << std::endl;
 }
 
 bool LongPollSession::GetLongPollServer()
@@ -76,6 +88,10 @@ bool LongPollSession::GetLongPollServer()
     if(tmp.HasMember("ts")) {
         this->Response.ts = tmp["ts"].GetInt();
     }
+    if(tmp.HasMember("failed"))
+    {
+        return false;
+    }
     return true;
 }
 
@@ -91,6 +107,17 @@ void LongPollSession::MakeUrl()
                                  "&need_pts=" + this->need_pts +
                                  "&access_token=" + this->accessToken +
                                  "&v=5.40";
+}
+
+void LongPollSession::StartThread()
+{
+    std::thread thr(&LongPollSession::Start, this);
+    thr.detach();
+}
+
+void LongPollSession::KillThread()
+{
+    this->action = false;
 }
 
 //void LongPollSession::StartSession(LongPollSession& tmp)

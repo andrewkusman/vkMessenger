@@ -51,6 +51,10 @@ std::list<Messages> Messages::GetMessageList(std::string incJson){
                         j++;
                         msg.flags = element[j].GetInt();
                         j++;
+                        if(msg.flags == 51 || msg.flags == 17 || msg.flags == 8243)
+                        {
+                            msg.fromMe = true;
+                        }
                         msg.from_id = element[j].GetInt();
                         j++;
                         msg.timestamp = element[j].GetInt();

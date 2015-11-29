@@ -29,6 +29,8 @@ private:
     void MakeUrl();
     bool action;
 
+
+
 public:
 //    static void StartSession(LongPollSession&);
     std::queue<Messages> queueOfMessages;
@@ -37,9 +39,12 @@ public:
     ~LongPollSession();
     void Start();
     std::string Output();
+    void StartThread();
+    void KillThread();
 //    static void StartThread(LongPollSession&);
 //    void Stop();
 };
+
 
 
 #endif //VKCLASSTEST_LONGPOLLSESSION_H

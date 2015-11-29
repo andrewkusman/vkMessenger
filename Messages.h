@@ -19,6 +19,8 @@ public:
     int timestamp;
     std::string subject;
     std::string text;
+    bool fromMe = false;
+    bool readstate = false;
 
     Messages(int message_id,
              int flags,
