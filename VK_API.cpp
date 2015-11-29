@@ -23,8 +23,7 @@ bool VK_API::Authorize()
                       "&password=" + this->_Password +
                       "&v=5.40"
                       "&lang=ru";
-    const char* tmp = GetResponseString(url).c_str();
-    std::string tmpStr = tmp;
+    std::string tmpStr = GetResponseString(url);
     if(tmpStr == "")
     {
         this->error = "connection";
@@ -32,6 +31,7 @@ bool VK_API::Authorize()
         this->haseError = true;
         return false;
     }
+    const char* tmp = tmpStr.c_str();
     document.Parse<0>(tmp);
     if(document.HasMember("access_token"))
     {

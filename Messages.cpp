@@ -35,10 +35,6 @@ std::list<Messages> Messages::GetMessageList(std::string incJson){
         for(rapidjson::SizeType i = 0; i < updates.Size(); i++)
         {
             const rapidjson::Value& element = updates[i];
-//            if(element.IsArray())
-//            {
-//                std::cout << "Ololo" << std::endl;
-//            }
             if(element.IsArray())
             {
                 for(rapidjson::SizeType j = 0; j < element.Size(); j++)

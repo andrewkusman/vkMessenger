@@ -13,17 +13,19 @@ int main()
     if(vk_api.Authorize())
     {
         std::cout << "Login successful" << std::endl;
-    }
-    LongPollSession longPollSession = LongPollSession(vk_api);
-    longPollSession.StartThread();
-    while(true)
-    {
-        if(!longPollSession.queueOfMessages.empty())
+        LongPollSession longPollSession = LongPollSession(vk_api);
+        longPollSession.StartThread();
+        while(true)
         {
-            std::cout << ">> " + longPollSession.queueOfMessages.front().text << std::endl;
-            longPollSession.queueOfMessages.pop();
+            if(!longPollSession.queueOfMessages.empty())
+            {
+                std::cout << ">> " + longPollSession.queueOfMessages.front().text << std::endl;
+                longPollSession.queueOfMessages.pop();
+            }
         }
     }
+    else
+        std::cout << "ERROR: " + vk_api.error + " :: " + vk_api.error_description << std::endl;
 
     return 0;
 }
