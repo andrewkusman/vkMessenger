@@ -23,12 +23,43 @@ bool VK_API::Authorize()
                       "&password=" + this->_Password +
                       "&v=5.40"
                       "&lang=ru";
-//    std::cout << url;
     const char* tmp = GetResponseString(url).c_str();
+    std::string tmpStr = tmp;
+    if(tmpStr == "")
+    {
+        this->error = "connection";
+        this->error_description = "no_connection";
+        this->haseError = true;
+        return false;
+    }
     document.Parse<0>(tmp);
-    assert(document.HasMember("access_token"));
-    this->_AccessToken = document["access_token"].GetString();
-    return true;
+    if(document.HasMember("access_token"))
+    {
+        this->_AccessToken = document["access_token"].GetString();
+        return true;
+    }
+    if (document.HasMember("error"))
+    {
+        this->_AccessToken = "";
+        this->error = document["error"].GetString();
+        this->haseError = true;
+        return false;
+    }
+    if (document.HasMember("error_description"))
+    {
+        this->_AccessToken = "";
+        this->error_description = document["error_description"].GetString();
+        this->haseError = true;
+        return false;
+    }
+    else
+    {
+        this->_AccessToken = "";
+        this->error = "ERROR";
+        this->error_description = "unknown_error";
+        this->haseError = true;
+        return false;
+    }
 
 }
 

@@ -13,6 +13,9 @@ private:
     std::string _UserName;
     std::string _Password;
 public:
+    std::string error = "";
+    std::string error_description = "";
+    bool haseError = false;
     VK_API(std::string userName, std::string password);
     ~VK_API();
     bool Authorize();

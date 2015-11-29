@@ -25,12 +25,15 @@ void LongPollSession::Start()
 {
     std::cout << "Start" << std::endl;
     action = true;
-    while(true)
+    int counter = 0;
+    while(counter < 4)
     {
         if(GetLongPollServer())
         {
             break;
         }
+        else
+            counter++;
     }
     rapidjson::Document document;
     std::string urlToConnect = "https://"+ this->Response.server +"?act=a_check"
@@ -41,29 +44,21 @@ void LongPollSession::Start()
     std::list<Messages> tmpList;
     while(action)
     {
-//        std::cout << ">> Urlstring: " + urlToConnect << std::endl;
         std::string response = GetResponseString(urlToConnect);
         const char *tmp = response.c_str();
-//        std::cout << ">> Response 1: " + response << std::endl;
         document.Parse<0>(tmp);
-
         if (document.HasMember("ts")) {
             this->Response.ts = document["ts"].GetInt();
-//            std::cout << Response.ts << std::endl;
         }
         urlToConnect = "https://"+ this->Response.server +"?act=a_check"
                        "&key=" + this->Response.key +
                        "&ts=" + std::to_string(this->Response.ts) +
                        "&wait=25"
                        "&mode=0";
-//        std::cout << ">> Response: " + response << std::endl;
         tmpList = Messages::GetMessageList(response);
         for(auto c : tmpList)
         {
             queueOfMessages.push(c);
-            //std::cout << ">> " + queueOfMessages.front().text << std::endl;
-//            queueOfMessages.pop();
-
         }
     }
     std::cout << "Thread was killed" << std::endl;
@@ -74,13 +69,16 @@ bool LongPollSession::GetLongPollServer()
     MakeUrl();
     rapidjson::Document document;
     std::string response = GetResponseString(this->urlForLongPoll);
+    if(response == "")
+    {
+        return false;
+    }
     const char* cstr = response.c_str();
     document.Parse<0>(cstr);
     const rapidjson::Value& tmp = document["response"];
 
     if(tmp.HasMember("key")) {
         this->Response.key = tmp["key"].GetString();
-//        std::cout << "Key: >>  " + this->Response.key << std::endl;
     }
     if(tmp.HasMember("server")) {
         this->Response.server = tmp["server"].GetString();
