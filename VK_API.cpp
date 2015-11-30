@@ -15,37 +15,25 @@ VK_API :: VK_API(std::string userName, std::string password)
 bool VK_API::Authorize()
 {
     rapidjson::Document document;
-    std::string url;
-    if(!this->needCaptcha)
+    std::string url = "https://oauth.vk.com/token"
+                              "?grant_type=password"
+                              "&client_id=3697615"
+                              "&client_secret=AlVXZFMUqyrnABp8ncuU"
+                              "&username=" + this->_UserName +
+                      "&password=" + this->_Password +
+                      "&v=5.40"
+                              "&lang=ru";;
+    if(needCaptcha)
     {
-        url = "https://oauth.vk.com/token"
-                                  "?grant_type=password"
-                                  "&client_id=3697615"
-                                  "&client_secret=AlVXZFMUqyrnABp8ncuU"
-                                  "&username=" + this->_UserName +
-                          "&password=" + this->_Password +
-                          "&v=5.40"
-                                  "&lang=ru";
-    }
-    else
-    {
-        url = "https://oauth.vk.com/token"
-                                  "?grant_type=password"
-                                  "&client_id=3697615"
-                                  "&client_secret=AlVXZFMUqyrnABp8ncuU"
-                                  "&username=" + this->_UserName +
-                          "&password=" + this->_Password +
-                          "&v=5.40"
-                                  "&lang=ru"
-                                  "&captcha_sid=" + this->captcha.captcha_sid +
-                                  "&captcha_key=" + this->captcha.captcha_key;
+        url += "&captcha_sid=" + this->captcha.captcha_sid +
+               "&captcha_key=" + this->captcha.captcha_key;
     }
     std::string tmpStr = GetResponseString(url);
     if(tmpStr == "")
     {
         this->error = "connection";
         this->error_description = "no_connection";
-        this->haseError = true;
+        this->has_error = true;
         return false;
     }
     const char* tmp = tmpStr.c_str();
@@ -63,19 +51,19 @@ bool VK_API::Authorize()
             this->captcha.captcha_sid = document["captcha_sid"].GetString();
             this->captcha.captcha_img = document["captcha_img"].GetString();
             this->needCaptcha = true;
-            this->haseError = true;
+            this->has_error = true;
             return false;
         }
         this->_AccessToken = "";
         this->error = document["error"].GetString();
-        this->haseError = true;
+        this->has_error = true;
         return false;
     }
     if (document.HasMember("error_description"))
     {
         this->_AccessToken = "";
         this->error_description = document["error_description"].GetString();
-        this->haseError = true;
+        this->has_error = true;
         return false;
     }
     else
@@ -83,7 +71,7 @@ bool VK_API::Authorize()
         this->_AccessToken = "";
         this->error = "ERROR";
         this->error_description = "unknown_error";
-        this->haseError = true;
+        this->has_error = true;
         return false;
     }
 

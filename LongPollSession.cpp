@@ -126,14 +126,3 @@ void LongPollSession::KillThread()  //stop thread
 {
     this->action = false;
 }
-
-//void LongPollSession::StartSession(LongPollSession& tmp)
-//{
-//    tmp.Start();
-//}
-//
-//void LongPollSession::StartThread(LongPollSession& tmp)
-//{
-//    std::thread threadFunc(StartSession, std::cref(tmp));
-//    threadFunc.join();
-//}

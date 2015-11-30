@@ -23,7 +23,7 @@ public:
     struct Captcha captcha;
     std::string error = "";
     std::string error_description = "";
-    bool haseError = false;
+    bool has_error = false;
     VK_API(std::string userName, std::string password);
     ~VK_API();
     bool Authorize();

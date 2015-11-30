@@ -1,5 +1,7 @@
 #include "VK_API.h"
 #include "LongPollSession.h"
+#include "User.h"
+#include "Me.h"
 #include <string>
 #include <iostream>
 
@@ -15,8 +17,9 @@ int main()
         if (vk_api.Authorize())
         {
             vk_api.needCaptcha = false;
-            vk_api.haseError = false;
+            vk_api.has_error = false;
             std::cout << "Login successful" << std::endl;
+            Me usr = Me(vk_api);
             LongPollSession longPollSession = LongPollSession(vk_api);
             longPollSession.StartThread();
             while(true)
