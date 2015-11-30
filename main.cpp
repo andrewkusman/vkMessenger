@@ -11,7 +11,9 @@ int main()
     std::cin >> password;
     VK_API vk_api = VK_API("89998132952", password);
     while(true) {
-        if (vk_api.Authorize()) {
+
+        if (vk_api.Authorize())
+        {
             vk_api.needCaptcha = false;
             vk_api.haseError = false;
             std::cout << "Login successful" << std::endl;
@@ -38,3 +40,5 @@ int main()
     }
     return 0;
 }
+
+//g++ -std=c++11 FunctionsFile.cpp LongPollSession.cpp main.cpp Messages.cpp User.cpp VK_API.cpp -o main -pthread -lcurl -lcurlpp
