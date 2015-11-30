@@ -23,7 +23,7 @@ LongPollSession::~LongPollSession()
 
 void LongPollSession::Start()
 {
-    std::cout << "Start" << std::endl;
+    std::cout << "Start session" << std::endl;
     action = true;
     int counter = 0;
     while(counter < 4)
@@ -38,6 +38,7 @@ void LongPollSession::Start()
     if(counter == 4)
     {
         this->error = "Can't connect to longPoll server";
+        this->wasError = true;
     }
     else {
         rapidjson::Document document;
@@ -52,6 +53,7 @@ void LongPollSession::Start()
             if(response == "")
             {
                 this->error = "Problems in connection to longpoll";
+                wasError = true;
             }
             else
             {
@@ -71,6 +73,7 @@ void LongPollSession::Start()
                 }
             }
         }
+        this->wasError = false;
         std::cout << "Thread was killed" << std::endl;
     }
 }

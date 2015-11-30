@@ -6,6 +6,12 @@
 #include <sstream>
 #include <iostream>
 
+struct Captcha
+{
+    std::string captcha_sid = "";
+    std::string captcha_img = "";
+    std::string captcha_key = "";
+};
 
 class VK_API {
 private:
@@ -13,6 +19,8 @@ private:
     std::string _UserName;
     std::string _Password;
 public:
+    bool needCaptcha = false;
+    struct Captcha captcha;
     std::string error = "";
     std::string error_description = "";
     bool haseError = false;

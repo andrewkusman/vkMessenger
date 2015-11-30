@@ -15,14 +15,31 @@ VK_API :: VK_API(std::string userName, std::string password)
 bool VK_API::Authorize()
 {
     rapidjson::Document document;
-    std::string url = "https://oauth.vk.com/token"
-                      "?grant_type=password"
-                      "&client_id=3697615"
-                      "&client_secret=AlVXZFMUqyrnABp8ncuU"
-                      "&username=" + this->_UserName +
-                      "&password=" + this->_Password +
-                      "&v=5.40"
-                      "&lang=ru";
+    std::string url;
+    if(!this->needCaptcha)
+    {
+        url = "https://oauth.vk.com/token"
+                                  "?grant_type=password"
+                                  "&client_id=3697615"
+                                  "&client_secret=AlVXZFMUqyrnABp8ncuU"
+                                  "&username=" + this->_UserName +
+                          "&password=" + this->_Password +
+                          "&v=5.40"
+                                  "&lang=ru";
+    }
+    else
+    {
+        url = "https://oauth.vk.com/token"
+                                  "?grant_type=password"
+                                  "&client_id=3697615"
+                                  "&client_secret=AlVXZFMUqyrnABp8ncuU"
+                                  "&username=" + this->_UserName +
+                          "&password=" + this->_Password +
+                          "&v=5.40"
+                                  "&lang=ru"
+                                  "&captcha_sid=" + this->captcha.captcha_sid +
+                                  "&captcha_key=" + this->captcha.captcha_key;
+    }
     std::string tmpStr = GetResponseString(url);
     if(tmpStr == "")
     {
@@ -40,6 +57,15 @@ bool VK_API::Authorize()
     }
     if (document.HasMember("error"))
     {
+        if(document.HasMember("captcha_sid") && document.HasMember("captcha_img"))
+        {
+            this->error = document["error"].GetString();
+            this->captcha.captcha_sid = document["captcha_sid"].GetString();
+            this->captcha.captcha_img = document["captcha_img"].GetString();
+            this->needCaptcha = true;
+            this->haseError = true;
+            return false;
+        }
         this->_AccessToken = "";
         this->error = document["error"].GetString();
         this->haseError = true;

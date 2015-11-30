@@ -33,6 +33,7 @@ private:
 
 public:
 //    static void StartSession(LongPollSession&);
+    bool wasError = false;
     std::string error = "";
     std::queue<Messages> queueOfMessages;
     LongPollSession(VK_API&);
