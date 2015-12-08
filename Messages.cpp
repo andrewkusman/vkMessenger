@@ -18,6 +18,7 @@ Messages::Messages(int inMessage_id,
     this->timestamp = inTimestamp;
     this->subject = inSubject;
     this->text = inText;
+    this->is_new = true;
 }
 
 Messages::Messages()
@@ -47,7 +48,7 @@ std::list<Messages> Messages::GetMessageList(std::string incJson){
                         j++;
                         msg.flags = element[j].GetInt();
                         j++;
-                        if(msg.flags == 51 || msg.flags == 17 || msg.flags == 8243)
+                        if(msg.flags == 51 || msg.flags == 17 || msg.flags == 8243 || msg.flags == 35)
                         {
                             msg.fromMe = true;
                         }
@@ -58,6 +59,7 @@ std::list<Messages> Messages::GetMessageList(std::string incJson){
                         msg.subject = element[j].GetString();
                         j++;
                         msg.text = element[j].GetString();
+                        msg.is_new = true;
                         tmpListOfMessages.push_front(msg);
                     }
                 }

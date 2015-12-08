@@ -21,6 +21,7 @@ public:
     std::string text;
     bool fromMe = false;
     bool readstate = false;
+    bool is_new = true;
 
     Messages(int message_id,
              int flags,

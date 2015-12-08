@@ -40,7 +40,7 @@ public:
     LongPollSession(VK_API&, bool, bool);
     ~LongPollSession();
     void Start();
-    void StartThread();
+    bool StartThread();
     void KillThread();
 //    static void StartThread(LongPollSession&);
 //    void Stop();

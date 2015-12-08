@@ -116,10 +116,11 @@ void LongPollSession::MakeUrl()  //When we're creating new object, we have to re
                                  "&v=5.40";
 }
 
-void LongPollSession::StartThread()  //new thread to get messageList
+bool LongPollSession::StartThread()  //new thread to get messageList
 {
     std::thread thr(&LongPollSession::Start, this);
     thr.detach();
+    return true;
 }
 
 void LongPollSession::KillThread()  //stop thread

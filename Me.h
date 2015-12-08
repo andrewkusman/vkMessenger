@@ -10,6 +10,7 @@
 #include "Messages.h"
 #include "User.h"
 #include <map>
+#include <ctime>
 
 class Me
 {
@@ -20,8 +21,11 @@ private:
     bool new_messages = false;
     int friends_count;
     int id;
+    std::string access_token;
 public:
     Me(VK_API);
+    std::string error_message;
+    std::string GetNameById(int id);
     int GetFriendsNumb() const;
     bool IsOnline() const;
     std::string GetFirstName() const;
@@ -29,6 +33,7 @@ public:
     bool NewMessages() const;
     int GetId() const;
     std::vector<User> list_of_user;
+    bool MessageSent(int id, std::string message);
     bool IncMessagesSort(Messages newMessage);
 };
 

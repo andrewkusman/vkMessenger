@@ -47,3 +47,8 @@ void User::SetNewMessages(bool tmp)
 {
     this->new_messages = tmp;
 }
+
+std::string User::GetFullName() const
+{
+    return this->first_name + " " + this->last_name;
+}

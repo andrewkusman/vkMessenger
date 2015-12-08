@@ -18,6 +18,7 @@ private:
     bool new_messages = false;
     int id;
 public:
+    std::string GetFullName() const;
     bool IsOnline() const;
     std::string GetFirstName() const;
     std::string GetLastName() const;
@@ -26,6 +27,7 @@ public:
     int GetId() const;
     User(std::string firstName, std::string lastName, int id);
     User(std::string firstName, std::string lastName, int id, bool online);
+
     std::vector<Messages> list_of_messages;
 };
 
