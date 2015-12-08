@@ -77,7 +77,7 @@ bool VK_API::Authorize()
 
 }
 
-std::string VK_API::Get_AccessToken()
+std::string VK_API::Get_AccessToken() const
 {
     return this->_AccessToken;
 }

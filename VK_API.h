@@ -27,7 +27,7 @@ public:
     VK_API(std::string userName, std::string password);
     ~VK_API();
     bool Authorize();
-    std::string Get_AccessToken();
+    std::string Get_AccessToken() const;
 };
 
 
