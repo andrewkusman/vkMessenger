@@ -9,6 +9,8 @@
 #include <queue>
 #include "FunctionsFile.h"
 #include <thread>
+#include <mutex>
+
 
 struct LongPollServerResponse
 {
@@ -16,6 +18,8 @@ struct LongPollServerResponse
     std::string server = "";
     int ts = 0;
 };
+
+//std::mutex test;
 
 class LongPollSession
 {

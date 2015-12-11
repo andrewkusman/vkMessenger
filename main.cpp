@@ -2,187 +2,278 @@
 #include "LongPollSession.h"
 #include "User.h"
 #include "Me.h"
+#include "ncurses.h"
+
+std::mutex test;
+
+int row, col;
+int current_row;
+int col_to_move;
+bool input_mode_command = 1;
+std::string currentUser;
+
+//std::string readString(WINDOW* scr)
+//{
+//    int x, y;
+//    getyx(scr, y, x);
+//    wmove(scr, 0, 0);
+//    std::string output;
+//    output.clear();
+//    for(int i = col_to_move; i < scr->_maxx; i++)
+//    {
+//        output.push_back(winch(scr));
+//        wmove(scr, 0, i);
+//        if(winch(scr) == ' ' && output.back() == ' ')
+//        {
+//            break;
+//        }
+//    }
+//    if(output.empty())
+//    {
+//        return "";
+//    }
+//    else
+//    {
+//        output.pop_back();
+//        wmove(scr, y, x);
+//        return output;
+//    }
+//}
+
+std::string getstring(bool t, WINDOW* scr)
+{
+    std::string input;
+    int x, y;
+
+    // let the terminal do the line editing
+    nocbreak();
+    if(t)
+        echo();
+    else
+        noecho();
+
+    // this reads from buffer after <ENTER>, not "raw"
+    // so any backspacing etc. has already been taken care of
+    int ch = wgetch(scr);
+    getyx(scr, y, x);
+    while ( ch != '\n' )
+    {
+        input.push_back( ch );
+        wrefresh(scr);
+        ch = wgetch(scr);
+    }
+    // restore your cbreak / echo settings here
+
+    return input;
+}
+
+//std::string input; // Global variable to hold current input. String type because UNIX philosophy.
+
+//std::string getinput () // Gets one unit of input at a time. Whether that is one line or one character is dependent on the input mode.
+//{
+//    std::string input;
+//    char ch;
+//    input.clear();
+//    if (input_mode_command)
+//    {
+//        while (1) // Assumes (default) position of cursor is at printing location.
+//        {
+//            ch = getch();
+//            addch(ch);
+//            if (ch == '\n') // Keeps buffering input until end of line. Check done after acquiring input char (thus if inside while) to prevent it from being discarded automatically.
+//            {
+//                return "";
+//            }
+//            if (ch == '\a' || ch == '\b') // Ensure normal attempts at backspace are caught.
+//            {
+//                if (!input.empty()) // pop_back will cause a crash when attempting to remove stuff from an empty vector.
+//                {
+//                    input.pop_back(); // Removes previously entered character from buffered input.
+//                    addch('\b'); // Actual backspacing from user's perspective in these 5 lines.
+//                    addch(' ');
+//                    int y, x;
+//                    getyx (stdscr, y, x);
+//                    move (y, x-1); // More than one line of user input deemed unlikely/useless.
+//                }
+//            }
+//            else
+//            {
+//                input.push_back(ch);
+//                addch(ch);
+//            }
+//        }
+//    }
+//    else
+//    {
+//        ch = getch();
+//        input.push_back(ch);
+//    }
+//    return input;
+//}
 
 void Send(Me* usr)
 {
-    int id = usr->GetId();
-    std::string str = " ";
+//    wmove(stdscr, row/2, col/2);
+
+}
+
+void ShowMessages(Me* usr, LongPollSession* longPollSession, WINDOW* windowTest)
+{
+    int x, y;
+    std::string buffer;
+    init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(2, COLOR_CYAN, COLOR_BLACK);
+
     while(true)
     {
-        std::cout << usr->GetNameById(id) + " >> ";
-        std::getline(std::cin, str);
-        if(str.compare("изменить адресата") == 0)
+        if (!longPollSession->queueOfMessages.empty())
         {
-            std::cout << "Укажите нового адресата: " ;
-            std::string tmp = " ";
-            std::getline(std::cin, tmp);
-            for(int i = 0; i < usr->list_of_user.size(); i++)
-            {
-                if (usr->list_of_user[i].GetFullName().compare(tmp) == 0)
-                {
-                    id = usr->list_of_user[i].GetId();
+            test.lock();
+            usr->IncMessagesSort(longPollSession->queueOfMessages.front());
+            longPollSession->queueOfMessages.pop();
+            test.unlock();
+            for (int i = 0; i < usr->list_of_user.size(); i++) {
+                if (usr->list_of_user[i].NewMessages() == true) {
+                    for (int j = 0; j < usr->list_of_user[i].list_of_messages.size(); j++) {
+                        if (usr->list_of_user[i].list_of_messages[j].is_new == true) {
+                            getyx(windowTest,y, x);
+//                            buffer = readString(windowTest);
+                            if (usr->list_of_user[i].list_of_messages[j].fromMe) {
+                                attron(COLOR_PAIR(1));
+                                wscrl(stdscr, 1);
+                                mvwprintw(stdscr, stdscr->_maxy-2, 0,
+                                          "%s >> %s",
+                                          usr->list_of_user[i].GetFirstName().c_str(),
+                                          usr->list_of_user[i].list_of_messages[j].text.c_str());
+                                attroff(COLOR_PAIR(1));
+                                wrefresh(stdscr);
+                            }
+                            else {
+                                attron(COLOR_PAIR(2));
+                                wscrl(stdscr, 1);
+                                wmove(stdscr, stdscr->_maxy-2, 0);
+                                wprintw(stdscr, "%s >> %s",
+                                          usr->list_of_user[i].GetFirstName().c_str(),
+                                          usr->list_of_user[i].list_of_messages[j].text.c_str());
+                                wrefresh(stdscr);
+                                attroff(COLOR_PAIR(2));
+                            }
+                            wmove(windowTest, 0, 0);
+                            wprintw(windowTest, "%s", currentUser.c_str());
+                            wrefresh(windowTest);
+                            wmove(windowTest, y, x);
+                            usr->list_of_user[i].list_of_messages[j].is_new = false;
+                        }
+                    }
+                    usr->list_of_user[i].SetNewMessages(false);
                 }
             }
-        }
-        else
-        {
-//            std::cout << "Sent " << std::endl;
-            if(usr->MessageSent(id, str))
-            {
-//                std::cout << "fine " << std::endl;
-            }
-            else
-                std::cout << "Pizdec" << std::endl;
         }
     }
 }
 
+
 int main()
 {
+    setlocale(LC_ALL, "");
+    initscr();
+//    wresize(stdscr, 30, 60);
+    start_color();
+    scrollok(stdscr, true);
     std::string password;
-    std::cin >> password;
+    cbreak();
+    getmaxyx(stdscr, row, col);
+    mvwprintw(stdscr, row / 2, (col - strlen("Введите пароль: ")) / 2, "%s", "Введите пароль: ");
+    wmove(stdscr, row / 2, (col - strlen("Введите пароль: ")) / 2 + 16);
+    wrefresh(stdscr);
+    password = getstring(false, stdscr);
     VK_API vk_api = VK_API("89998132952", password);
     while(true)
     {
-
         if (vk_api.Authorize())
         {
             vk_api.needCaptcha = false;
             vk_api.has_error = false;
-            std::cout << "Login successful" << std::endl;
+            mvwprintw(stdscr, row / 2 + 1, (col - strlen("Введите пароль: ")) / 2, "%s", "Пароль верный");
+            wrefresh(stdscr);
+            getch();
+            clear();
+            wrefresh(stdscr);
+            WINDOW* windowTest = newwin(1, col, row-1, 0);
+            scrollok(windowTest, false);
+            wrefresh(windowTest);
             Me usr = Me(vk_api);
-            std::cout << usr.list_of_user.front().GetFirstName() + " >> " +  usr.list_of_user.front().GetLastName()<< std::endl;
             LongPollSession longPollSession = LongPollSession(vk_api);
-            if(longPollSession.StartThread())
-            {
-                std::thread thr(Send, &usr);
-                thr.detach();
-            }
+            longPollSession.StartThread();
+            std::thread thr(ShowMessages, &usr, &longPollSession, std::ref(windowTest));
+            thr.detach();
+            int id = usr.GetId();
+            std::string tmpStr;
+            col_to_move = usr.GetNameById(id).length() / 2 + 4; // Кусачев Андрей >>
+            currentUser = usr.GetNameById(id) + " >> ";
+            wprintw(windowTest, "%s ", currentUser.c_str());
             while(true)
             {
-                if(!longPollSession.queueOfMessages.empty())
+//                wrefresh(windowTest);
+//                wmove(windowTest,0, 0);
+                wmove(windowTest,0, col_to_move);
+                wclrtoeol(windowTest);
+                wrefresh(windowTest);
+                tmpStr = getstring(true, windowTest);
+                wrefresh(windowTest);
+                if(tmpStr.compare("изменить адресата") == 0)
                 {
-//                    std::cout << "Crush before IncMessagesSort" << std::endl;
-                    usr.IncMessagesSort(longPollSession.queueOfMessages.front());
-                    longPollSession.queueOfMessages.pop();
+                    wmove(windowTest, 0, 0);
+                    wclrtoeol(windowTest);
+                    wrefresh(windowTest);
+                    wprintw(windowTest, "Укажите нового адресата: ");
+                    wrefresh(windowTest);
+                    std::string tmp = getstring(true, windowTest);
+                    wrefresh(windowTest);
                     for(int i = 0; i < usr.list_of_user.size(); i++)
                     {
-                        if(usr.list_of_user[i].NewMessages() == true)
+                        if (usr.list_of_user[i].GetFullName().compare(tmp) == 0)
                         {
-                            for(int j = 0; j < usr.list_of_user[i].list_of_messages.size(); j++)
-                            {
-                                if(usr.list_of_user[i].list_of_messages[j].is_new == true)
-                                {
-                                    std::string tmp;
-                                    if(usr.list_of_user[i].list_of_messages[j].fromMe)
-                                    {
-//                                        std::cout << "\r\n" + usr.list_of_user[i].GetFirstName()
-//                                        << " >> " + usr.list_of_user[i].list_of_messages[j].text
-//                                        << std::endl;
-                                    }
-                                    else
-                                    {
-                                        std::cout << "\r\n" + usr.list_of_user[i].GetFirstName()
-                                        << " << " + usr.list_of_user[i].list_of_messages[j].text
-                                        << std::endl;
-                                    }
-                                    usr.list_of_user[i].list_of_messages[j].is_new = false;
-                                }
-                            }
-                            usr.list_of_user[i].SetNewMessages(false);
+                            id = usr.list_of_user[i].GetId();
                         }
                     }
-//                    std::cout << "Crush before pop" << std::endl;
+                    wmove(windowTest,0, 0);
+                    wclrtoeol(windowTest);
+                    wprintw(windowTest, (usr.GetNameById(id) + " >> ").c_str());
+                    wrefresh(windowTest);
+                    col_to_move = usr.GetNameById(id).length() / 2 + 4;
+                }
+                else
+                {
+//            std::cout << "Sent " << std::endl;
+                    if(usr.MessageSent(id, tmpStr))
+                    {
+                        wmove(windowTest, 0, col_to_move);
+                    }
+                    else
+                        std::cout << "Pizdec" << std::endl;
                 }
             }
         }
         else {
-            std::cout << "ERROR: " + vk_api.error + " :: " + vk_api.error_description << std::endl;
+            wclear(stdscr);
+            wmove(stdscr, row/2-1, col/2 - 20);
+            wprintw(stdscr, "ERROR: %s :: %s \n", vk_api.error.c_str(), vk_api.error_description.c_str());
+            wrefresh(stdscr);
+//            std::cout << "ERROR: " + vk_api.error + " :: " + vk_api.error_description << std::endl;
             if (vk_api.needCaptcha) {
-                std::cout << "Captcha sid :: " + vk_api.captcha.captcha_sid << std::endl
-                << "Captcha img :: " + vk_api.captcha.captcha_img << std::endl
-                << "Input Captcha key: ";
-                std::cin >> vk_api.captcha.captcha_key;
+                wmove(stdscr, row/2, col/2 - 20);
+                wprintw(stdscr, "Captcha sid :: %s ", vk_api.captcha.captcha_sid.c_str());
+                wmove(stdscr, row/2+1, col/2 - 20);
+                wprintw(stdscr, "Captcha img :: %s ", vk_api.captcha.captcha_img.c_str());
+                wmove(stdscr, row/2+2, col/2 - 20);
+                wprintw(stdscr, "Input Captcha key: ");
+                wrefresh(stdscr);
+                vk_api.captcha.captcha_key = getstring(true, stdscr);
             }
         }
     }
     return 0;
 }
 
-//#include "VK_API.h"
-//#include "LongPollSession.h"
-//#include "User.h"
-//#include "Me.h"
-//
-////void Send(Me* usr)
-////{
-////    int id = 35220086;
-//////    char *msg;
-////    std::string str;
-//////    std::cin >> id;
-////    while(true)
-////    {
-////        std::cin >> str;
-////        usr->MessageSent(id, str);
-////    }
-////}
-//
-//int main()
-//{
-//    std::string password;
-//    std::cin >> password;
-//    VK_API vk_api = VK_API("89998132952", password);
-//    while(true)
-//    {
-//        if (vk_api.Authorize())
-//        {
-//            vk_api.needCaptcha = false;
-//            vk_api.has_error = false;
-//            std::cout << "Login successful" << std::endl;
-//            Me usr = Me(vk_api);
-//            std::cout << usr.list_of_user.front().GetFirstName() + " >> " +  usr.list_of_user.front().GetLastName()<< std::endl;
-//            LongPollSession longPollSession = LongPollSession(vk_api);
-//            longPollSession.StartThread();
-////            std::thread thr(Send, &usr);
-////            thr.detach();
-//            while(true)
-//            {
-//                if(!longPollSession.queueOfMessages.empty())
-//                {
-//                    usr.IncMessagesSort(longPollSession.queueOfMessages.front());
-//                    for(int i = 0; i < usr.list_of_user.size(); i++)
-//                    {
-//                        if(usr.list_of_user[i].NewMessages())
-//                        {
-//                            for(int j = usr.list_of_user[i].list_of_messages.size(); j >= 0; j--)
-//                            {
-//                                if(usr.list_of_user[i].list_of_messages[j].is_new)
-//                                {
-//                                    std::cout << ">> " + usr.list_of_user[i].GetFirstName() + " :: "
-//                                    << std::boolalpha << usr.list_of_user[i].list_of_messages[j].fromMe
-//                                    << ": " + usr.list_of_user[i].list_of_messages[j].text
-//                                    << std::endl;
-//                                    usr.list_of_user[i].list_of_messages[j].is_new = false;
-//                                }
-//                            }
-//                            usr.list_of_user[i].SetNewMessages(false);
-//                        }
-//                    }
-//                    longPollSession.queueOfMessages.pop();
-//                }
-//            }
-//        }
-//        else {
-//            std::cout << "ERROR: " + vk_api.error + " :: " + vk_api.error_description << std::endl;
-//            if (vk_api.needCaptcha) {
-//                std::cout << "Captcha sid :: " + vk_api.captcha.captcha_sid << std::endl
-//                << "Captcha img :: " + vk_api.captcha.captcha_img << std::endl
-//                << "Input Captcha key: ";
-//                std::cin >> vk_api.captcha.captcha_key;
-//            }
-//        }
-//    }
-//    return 0;
-//}
-
-//g++ -std=c++11 FunctionsFile.cpp Me.cpp LongPollSession.cpp main.cpp Messages.cpp User.cpp VK_API.cpp -o main -pthread -lcurl -lcurlpp
+//g++ -std=c++11 FunctionsFile.cpp Me.cpp LongPollSession.cpp main.cpp Messages.cpp User.cpp VK_API.cpp -o main -pthread -lcurl -lcurlpp -lncursesw

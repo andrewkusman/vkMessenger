@@ -23,7 +23,7 @@ LongPollSession::~LongPollSession()
 
 void LongPollSession::Start()
 {
-    std::cout << "Start session" << std::endl;
+//    std::cout << "Start session" << std::endl;
     action = true;
     int counter = 0;
     while(counter < 4)
@@ -69,12 +69,13 @@ void LongPollSession::Start()
                                "&mode=0";
                 tmpList = Messages::GetMessageList(response);
                 for (auto c : tmpList) {
+//                    lock_queue.lock();
                     queueOfMessages.push(c);
                 }
             }
         }
         this->wasError = false;
-        std::cout << "Thread was killed" << std::endl;
+//        std::cout << "Thread was killed" << std::endl;
     }
 }
 

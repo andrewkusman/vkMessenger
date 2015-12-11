@@ -55,7 +55,7 @@ Me::Me(VK_API tmp)
         if(resp.HasMember("count") && resp.HasMember("items"))
         {
             this->friends_count = resp["count"].GetInt();
-            std::cout << this->friends_count << std::endl;
+//            std::cout << this->friends_count << std::endl;
             const rapidjson::Value& items = resp["items"];
             if(items.IsArray())
             {
