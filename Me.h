@@ -30,6 +30,7 @@ public:
     bool IsOnline() const;
     std::string GetFirstName() const;
     std::string GetLastName() const;
+    User GetUserByFullName(std::string fullName) const;
     bool NewMessages() const;
     int GetId() const;
     std::vector<User> list_of_user;

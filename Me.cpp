@@ -68,7 +68,8 @@ Me::Me(VK_API tmp)
                                 items[i]["first_name"].GetString(),
                                 items[i]["last_name"].GetString(),
                                 items[i]["id"].GetInt(),
-                                items[i]["online"].GetInt() != 0)));
+                                items[i]["online"].GetInt() != 0,
+                                this->access_token)));
                     }
                 }
             }
@@ -79,7 +80,8 @@ Me::Me(VK_API tmp)
             this->first_name,
             this->last_name,
             this->id,
-            this->online)));
+            this->online,
+            this->access_token)));;
 }
 
 bool Me::IncMessagesSort(Messages newMessage)
@@ -89,6 +91,7 @@ bool Me::IncMessagesSort(Messages newMessage)
         if(list_of_user[i].GetId() == newMessage.from_id)
         {
             list_of_user[i].list_of_messages.push_back(newMessage);
+            list_of_user[i].last_message_id = newMessage.message_id;
             list_of_user[i].SetNewMessages(true);
             return true;
         }
@@ -141,6 +144,16 @@ std::string Me::GetNameById(int id)
             return this->list_of_user[i].GetFullName();
     }
     return "";
+}
+
+
+User Me::GetUserByFullName(std::string fullName) const
+{
+    for(int i = 0; i < this->list_of_user.size(); i++)
+    {
+        if(this->list_of_user[i].GetFullName().compare(fullName) == 0)
+            return this->list_of_user[i];
+    }
 }
 
 std::string Me::GetFirstName() const
