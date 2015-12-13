@@ -34,13 +34,14 @@ void User::GetMessageHistory(int offset, int count)
 {
     offset = 0;
     std::string url;
+    bool flag = true;
     if(!this->list_of_messages.empty())
     {
         url = "https://api.vk.com/method/messages.getHistory?"
               "user_id=" + std::to_string(this->id) +
               "&count=" + std::to_string(count) +
               "&rev=0"
-              "&start_message_id=" + std::to_string(this->list_of_messages.front().message_id);
+              "&start_message_id=" + std::to_string(this->list_of_messages.front().message_id) +
               "&access_token=" + this->access_token +
               "&v=5.40";
     }
@@ -54,27 +55,53 @@ void User::GetMessageHistory(int offset, int count)
               "&v=5.40";
     }
     rapidjson::Document document;
-        std::string response = GetResponseString(url);
-        document.Parse<0>(response.c_str());
-        int tmp = 0;
-        if (response == "") {
+    std::string response = GetResponseString(url);
+    document.Parse<0>(response.c_str());
+    int tmp = 0;
+    if (response == "")
+    {
 
-        }
-        else {
-            const rapidjson::Value &responseJson = document["response"];
-            if (responseJson.HasMember("items") && responseJson["items"].IsArray() && !responseJson["items"].Empty()) {
-                const rapidjson::Value &items = responseJson["items"];
-                for (rapidjson::SizeType i = 0; i < items.Size(); i++) {
-                    list_of_messages.push_back(*(new Messages(items[i]["id"].GetInt(),
-                                                              items[i]["from_id"].GetInt() == this->id ? 51 : 30,
-                                                              items[i]["from_id"].GetInt(),
-                                                              items[i]["date"].GetInt(),
-                                                              "",
-                                                              items[i]["body"].GetString())));
+    }
+    else {
+        const rapidjson::Value &responseJson = document["response"];
+        if (responseJson.HasMember("items") && responseJson["items"].IsArray() && !responseJson["items"].Empty())
+        {
+            const rapidjson::Value &items = responseJson["items"];
+            for (rapidjson::SizeType i = 0; i < items.Size(); i++)
+            {
+                Messages msg = Messages();
+                msg.timestamp = items[i]["date"].GetInt();
+                msg.from_id = items[i]["from_id"].GetInt();
+                msg.is_new = false;
+                msg.message_id = items[i]["id"].GetInt();
+                msg.subject = "";
+                msg.text = items[i]["body"].GetString();
+                if(items[i]["from_id"].GetInt() == this->id)
+                {
+                    msg.fromMe = false;
+                    msg.flags = 30;
                 }
+                else
+                {
+                    msg.fromMe = true;
+                    msg.flags = 51;
+                }
+                msg.from_histroy == true;
+                for(int j = 0; j < this->list_of_messages.size(); j++)
+                {
+                    if(this->list_of_messages[j].message_id == msg.message_id)
+                    {
+                        flag = false;
+                    }
+                }
+                if(flag)
+                    list_of_messages.push_back(msg);
+                flag = true;
             }
         }
+    }
     std::sort(this->list_of_messages.begin(), this->list_of_messages.end(), wayToSort);
+    this->SetNewMessages(false);
     this->loaded_history = true;
 }
 

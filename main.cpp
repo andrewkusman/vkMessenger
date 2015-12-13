@@ -9,8 +9,10 @@ std::mutex test;
 int row, col;
 int current_row;
 int col_to_move;
-bool input_mode_command = 1;
+bool interrupt = false;
 User current_user;
+
+void PrintNewMessages(WINDOW* windowTest, User currentuser);
 
 //std::string readString(WINDOW* scr)
 //{
@@ -40,6 +42,61 @@ User current_user;
 //    }
 //}
 
+void SelectDialog(Me* usr)
+{
+    initscr();
+    bool flag = true;
+    unsigned choice = 0; //Выбор пользователя
+    scrollok(stdscr, false);
+    curs_set(0); //"Убиваем" курсор
+    //Включаем режим удобной работы с функциональными клавишами, другими словами KEY_UP и KEY_DOWN без этого не работали бы
+    keypad(stdscr, true);
+    interrupt = true;
+    while ( flag )
+    {
+        clear();
+        for ( unsigned i = 0; i < usr->list_of_user.size(); i++ ) //Проходим по всем элементам меню
+        {
+            if ( i == choice )
+            {//Если текущий элемент совпадает с выбором пользователя
+                addch('>');
+            }//Выводим указатель
+            else
+            {
+                addch(' '); //Иначе выводим " ", для равновесия
+            }
+            printw("%s\n", usr->list_of_user[i].GetFullName().c_str());
+
+        }
+
+        //Получаем нажатие пользователя
+        switch ( getch() )
+        {
+            case KEY_UP:
+                if ( choice ) //Если возможно, переводим указатель вверх
+                    choice--;
+                break;
+            case KEY_DOWN:
+                if ( choice != usr->list_of_user.size() - 1) //Если возможно, переводим указатель вниз
+                    choice++;
+                break;
+            case KEY_RIGHT:
+                if(!usr->list_of_user[choice].loaded_history)
+                {
+                    usr->list_of_user[choice].GetMessageHistory(0, 200);
+                }
+                current_user = usr->list_of_user[choice];
+                PrintNewMessages(stdscr, usr->list_of_user[choice]);
+                current_user = usr->list_of_user[choice];
+                flag = false;
+                break;
+        }
+    }
+    interrupt = false;
+    nocbreak();
+    wclear(stdscr);
+}
+
 std::string getstring(bool t, WINDOW* scr)
 {
     std::string input;
@@ -67,161 +124,139 @@ std::string getstring(bool t, WINDOW* scr)
     return input;
 }
 
-//std::string input; // Global variable to hold current input. String type because UNIX philosophy.
-
-//std::string getinput () // Gets one unit of input at a time. Whether that is one line or one character is dependent on the input mode.
-//{
-//    std::string input;
-//    char ch;
-//    input.clear();
-//    if (input_mode_command)
-//    {
-//        while (1) // Assumes (default) position of cursor is at printing location.
-//        {
-//            ch = getch();
-//            addch(ch);
-//            if (ch == '\n') // Keeps buffering input until end of line. Check done after acquiring input char (thus if inside while) to prevent it from being discarded automatically.
-//            {
-//                return "";
-//            }
-//            if (ch == '\a' || ch == '\b') // Ensure normal attempts at backspace are caught.
-//            {
-//                if (!input.empty()) // pop_back will cause a crash when attempting to remove stuff from an empty vector.
-//                {
-//                    input.pop_back(); // Removes previously entered character from buffered input.
-//                    addch('\b'); // Actual backspacing from user's perspective in these 5 lines.
-//                    addch(' ');
-//                    int y, x;
-//                    getyx (stdscr, y, x);
-//                    move (y, x-1); // More than one line of user input deemed unlikely/useless.
-//                }
-//            }
-//            else
-//            {
-//                input.push_back(ch);
-//                addch(ch);
-//            }
-//        }
-//    }
-//    else
-//    {
-//        ch = getch();
-//        input.push_back(ch);
-//    }
-//    return input;
-//}
-
-void Send(Me* usr)
+std::string getstring(bool t, WINDOW* scr, Me* usr)
 {
-//    wmove(stdscr, row/2, col/2);
-
-}
-
-void PrintNewMessages(WINDOW* windowTest) {
+    std::string input;
     int x, y;
-    init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
-    init_pair(2, COLOR_CYAN, COLOR_BLACK);
-    if (current_user.loaded_history)
+
+    // let the terminal do the line editing
+    cbreak();
+    if(t)
+        echo();
+    else
+        noecho();
+
+    // this reads from buffer after <ENTER>, not "raw"
+    // so any backspacing etc. has already been taken care of
+    int ch = wgetch(scr);
+    getyx(scr, y, x);
+    while ( ch != '\n' )
     {
-        for (int j = current_user.list_of_messages.size()-1; j >= 0; j--)
+        if(ch == '\t')
         {
-            if (current_user.list_of_messages[j].is_new == true)
-            {
-                getyx(windowTest, y, x);
-//                        buffer = readString(windowTest);
-                if (current_user.list_of_messages[j].fromMe)
-                {
-                    attron(COLOR_PAIR(1));
-                    wscrl(stdscr, 1);
-                    mvwprintw(stdscr, stdscr->_maxy - 2, 0,
-                              "%s >> %s :: %d",
-                              current_user.GetFirstName().c_str(),
-                              current_user.list_of_messages[j].text.c_str(),
-                              current_user.list_of_messages[j].fromMe);
-                    attroff(COLOR_PAIR(1));
-                    wrefresh(stdscr);
-                }
-                else
-                {
-                    attron(COLOR_PAIR(2));
-                    wscrl(stdscr, 1);
-                    wmove(stdscr, stdscr->_maxy - 2, 0);
-                    wprintw(stdscr, "%s >> %s :: %d",
-                            current_user.GetFirstName().c_str(),
-                            current_user.list_of_messages[j].text.c_str(),
-                            current_user.list_of_messages[j].fromMe);
-                    wrefresh(stdscr);
-                    attroff(COLOR_PAIR(2));
-                }
-                wmove(windowTest, 0, 0);
-                wprintw(windowTest, "%s >> ", current_user.GetFirstName().c_str());
-                wrefresh(windowTest);
-                wmove(windowTest, y, x);
-                current_user.list_of_messages[j].is_new = false;
-            }
+            SelectDialog(usr);
         }
-        current_user.SetNewMessages(false);
-        current_user.loaded_history = true;
+        input.push_back( ch );
+        wrefresh(scr);
+        ch = wgetch(scr);
     }
+    // restore your cbreak / echo settings here
+
+    return input;
 }
+
+
+void PrintNewMessages(WINDOW* windowTest, User currentuser) {
+    int x, y;
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    init_pair(2, COLOR_CYAN, COLOR_BLACK);
+    wclear(stdscr);
+    wmove(stdscr, 0, 0);
+    for (int j = currentuser.list_of_messages.size()-1; j >= 0; j--)
+    {
+        test.lock();
+        if (currentuser.list_of_messages[j].fromMe)
+        {
+            attron(COLOR_PAIR(1));
+            wscrl(stdscr, 1);
+            mvwprintw(stdscr, stdscr->_maxy - 2, 0,
+                      "%s >> %s :: %d",
+                      currentuser.GetFirstName().c_str(),
+                      currentuser.list_of_messages[j].text.c_str(),
+                      currentuser.list_of_messages[j].fromMe);
+            attroff(COLOR_PAIR(1));
+            wrefresh(stdscr);
+        }
+        else
+        {
+            attron(COLOR_PAIR(2));
+            wscrl(stdscr, 1);
+            wmove(stdscr, stdscr->_maxy - 2, 0);
+            wprintw(stdscr, "%s >> %s :: %d",
+                    currentuser.GetFirstName().c_str(),
+                    currentuser.list_of_messages[j].text.c_str(),
+                    currentuser.list_of_messages[j].fromMe);
+            wrefresh(stdscr);
+            attroff(COLOR_PAIR(2));
+        }
+        test.unlock();
+        currentuser.list_of_messages[j].is_new = false;
+    }
+    currentuser.SetNewMessages(false);
+ }
 
 
 void ShowMessages(Me* usr, LongPollSession* longPollSession, WINDOW* windowTest)
 {
     int x, y;
     std::string buffer;
-    init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
 
     while(true)
     {
-        if (!longPollSession->queueOfMessages.empty())
+        if(!interrupt)
         {
-            test.lock();
-            usr->IncMessagesSort(longPollSession->queueOfMessages.front());
-            longPollSession->queueOfMessages.pop();
-            test.unlock();
-        }
-        for(int k = 0; k < usr->list_of_user.size(); k++)
-        {
-            if (usr->list_of_user[k].NewMessages() && usr->list_of_user[k].GetFullName().compare(current_user.GetFullName()) == 0)
+            if (!longPollSession->queueOfMessages.empty())
             {
-                for (int j = 0; j < usr->list_of_user[k].list_of_messages.size(); j++)
+                test.lock();
+                usr->IncMessagesSort(longPollSession->queueOfMessages.front());
+                longPollSession->queueOfMessages.pop();
+                test.unlock();
+            }
+            for (int k = 0; k < usr->list_of_user.size(); k++)
+            {
+                if (usr->list_of_user[k].NewMessages() &&
+                    usr->list_of_user[k].GetFullName().compare(current_user.GetFullName()) == 0)
                 {
-                    if (usr->list_of_user[k].list_of_messages[j].is_new == true)
+                    for (int j = 0; j < usr->list_of_user[k].list_of_messages.size(); j++)
                     {
-                        getyx(windowTest,y, x);
-//                        buffer = readString(windowTest);
-                        if (current_user.list_of_messages[j].fromMe) {
-                            attron(COLOR_PAIR(1));
-                            wscrl(stdscr, 1);
-                            mvwprintw(stdscr, stdscr->_maxy-2, 0,
-                                      "%s >> %s :: %d",
-                                      usr->list_of_user[k].GetFirstName().c_str(),
-                                      usr->list_of_user[k].list_of_messages[j].text.c_str(),
-                                      usr->list_of_user[k].list_of_messages[j].fromMe);
-                            attroff(COLOR_PAIR(1));
-                            wrefresh(stdscr);
+                        if (usr->list_of_user[k].list_of_messages[j].is_new == true)
+                        {
+                            getyx(windowTest, y, x);
+                            if (current_user.list_of_messages[j].fromMe)
+                            {
+                                attron(COLOR_PAIR(1));
+                                wscrl(stdscr, 1);
+                                mvwprintw(stdscr, stdscr->_maxy - 2, 0,
+                                          "%s >> %s :: %d",
+                                          usr->list_of_user[k].GetFirstName().c_str(),
+                                          usr->list_of_user[k].list_of_messages[j].text.c_str(),
+                                          usr->list_of_user[k].list_of_messages[j].fromMe);
+                                attroff(COLOR_PAIR(1));
+                                wrefresh(stdscr);
+                            }
+                            else
+                            {
+                                attron(COLOR_PAIR(2));
+                                wscrl(stdscr, 1);
+                                wmove(stdscr, stdscr->_maxy - 2, 0);
+                                wprintw(stdscr, "%s >> %s :: %d",
+                                        usr->list_of_user[k].GetFirstName().c_str(),
+                                        usr->list_of_user[k].list_of_messages[j].text.c_str(),
+                                        usr->list_of_user[k].list_of_messages[j].fromMe);
+                                wrefresh(stdscr);
+                                attroff(COLOR_PAIR(2));
+                            }
+                            wmove(windowTest, 0, 0);
+                            wprintw(windowTest, "%s >> ", usr->list_of_user[k].GetFirstName().c_str());
+                            wrefresh(windowTest);
+                            wmove(windowTest, y, x);
+                            usr->list_of_user[k].list_of_messages[j].is_new = false;
                         }
-                        else {
-                            attron(COLOR_PAIR(2));
-                            wscrl(stdscr, 1);
-                            wmove(stdscr, stdscr->_maxy-2, 0);
-                            wprintw(stdscr, "%s >> %s :: %d",
-                                    usr->list_of_user[k].GetFirstName().c_str(),
-                                    usr->list_of_user[k].list_of_messages[j].text.c_str(),
-                                    usr->list_of_user[k].list_of_messages[j].fromMe);
-                            wrefresh(stdscr);
-                            attroff(COLOR_PAIR(2));
-                        }
-                        wmove(windowTest, 0, 0);
-                        wprintw(windowTest, "%s >> ", usr->list_of_user[k].GetFirstName().c_str());
-                        wrefresh(windowTest);
-                        wmove(windowTest, y, x);
-                        usr->list_of_user[k].list_of_messages[j].is_new = false;
                     }
+                    usr->list_of_user[k].SetNewMessages(false);
                 }
-                usr->list_of_user[k].SetNewMessages(false);
             }
         }
     }
@@ -234,6 +269,8 @@ int main()
     initscr();
 //    wresize(stdscr, 30, 60);
     start_color();
+    init_pair(1,COLOR_WHITE, COLOR_BLACK);
+    bkgd(COLOR_PAIR(1));
     scrollok(stdscr, true);
     std::string password;
     cbreak();
@@ -264,7 +301,7 @@ int main()
             thr.detach();
             current_user = usr.GetUserByFullName(usr.GetNameById(usr.GetId()));
             current_user.GetMessageHistory(0, 200);
-            PrintNewMessages(windowTest);
+            PrintNewMessages(windowTest, current_user);
             int id = 0;
             std::string tmpStr;
             col_to_move = current_user.GetFirstName().length() / 2 + 4; // Кусачев Андрей >>
@@ -276,7 +313,7 @@ int main()
                 wmove(windowTest,0, col_to_move);
                 wclrtoeol(windowTest);
                 wrefresh(windowTest);
-                tmpStr = getstring(true, windowTest);
+                tmpStr = getstring(true, windowTest, &usr);
                 wrefresh(windowTest);
                 if(tmpStr.compare("изменить адресата") == 0)
                 {
@@ -291,20 +328,20 @@ int main()
                     {
                         if (usr.list_of_user[i].GetFullName().compare(tmp) == 0)
                         {
+                            interrupt = true;
+                            if(!usr.list_of_user[i].loaded_history)
+                            {
+                                usr.list_of_user[i].GetMessageHistory(0, 200);
+                            }
                             current_user = usr.list_of_user[i];
+                            PrintNewMessages(stdscr, usr.list_of_user[i]);
+                            wclear(stdscr);
+                            PrintNewMessages(stdscr, usr.list_of_user[i]);
+                            col_to_move = current_user.GetFirstName().length() / 2 + 4;
+                            interrupt = false;
+                            break;
                         }
                     }
-                    wclear(stdscr);
-                    wmove(windowTest,0, 0);
-                    wclrtoeol(windowTest);
-                    wprintw(windowTest, "%s >> ", current_user.GetFirstName().c_str());
-                    if(!current_user.loaded_history)
-                    {
-                        current_user.GetMessageHistory(0, 200);
-                    }
-                        PrintNewMessages(stdscr);
-                    wrefresh(windowTest);
-                    col_to_move = current_user.GetFirstName().length() / 2 + 4;
                 }
                 else
                 {
@@ -316,6 +353,10 @@ int main()
                     else
                         std::cout << "Pizdec" << std::endl;
                 }
+                wmove(windowTest,0, 0);
+                wclrtoeol(windowTest);
+                wprintw(windowTest, "%s >> ", current_user.GetFirstName().c_str());
+                wrefresh(windowTest);
             }
         }
         else {

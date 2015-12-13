@@ -22,7 +22,7 @@ public:
     bool fromMe = false;
     bool readstate = false;
     bool is_new = true;
-
+    bool from_histroy;
     Messages(int message_id,
              int flags,
              int from_id,

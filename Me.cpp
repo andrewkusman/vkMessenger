@@ -41,6 +41,7 @@ Me::Me(VK_API tmp)
     }
     url = "https://api.vk.com/method/friends.get?v=5.40"
                   "&fields=name"
+                  "&order=hints"
                   "&access_token=" + tmp.Get_AccessToken();
     response = GetResponseString(url);
     if(response == "")
@@ -91,12 +92,10 @@ bool Me::IncMessagesSort(Messages newMessage)
         if(list_of_user[i].GetId() == newMessage.from_id)
         {
             list_of_user[i].list_of_messages.push_back(newMessage);
-            list_of_user[i].last_message_id = newMessage.message_id;
             list_of_user[i].SetNewMessages(true);
             return true;
         }
     }
-    return false;
 }
 
 bool Me::MessageSent(int id, std::string message)
