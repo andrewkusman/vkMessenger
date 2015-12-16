@@ -28,7 +28,7 @@ User::User(std::string firstName, std::string lastName, int idOfUser, bool isOnl
     this->list_of_messages.clear();
 }
 
-bool wayToSort(Messages i, Messages j) { return i.timestamp > j.timestamp; }
+bool wayToSort(Messages i, Messages j) { return i.timestamp < j.timestamp; }
 
 void User::GetMessageHistory(int offset, int count)
 {
@@ -86,7 +86,6 @@ void User::GetMessageHistory(int offset, int count)
                     msg.fromMe = true;
                     msg.flags = 51;
                 }
-                msg.from_histroy == true;
                 for(int j = 0; j < this->list_of_messages.size(); j++)
                 {
                     if(this->list_of_messages[j].message_id == msg.message_id)

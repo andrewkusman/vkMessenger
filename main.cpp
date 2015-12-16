@@ -12,7 +12,7 @@ int col_to_move;
 bool interrupt = false;
 User current_user;
 
-void PrintNewMessages(WINDOW* windowTest, User currentuser);
+void PrintNewMessages(WINDOW* windowTest);
 
 //std::string readString(WINDOW* scr)
 //{
@@ -55,7 +55,7 @@ void SelectDialog(Me* usr)
     while ( flag )
     {
         clear();
-        for ( unsigned i = 0; i < usr->list_of_user.size(); i++ ) //Проходим по всем элементам меню
+        for ( unsigned i = 0; i < stdscr->_maxy; i++ ) //Проходим по всем элементам меню
         {
             if ( i == choice )
             {//Если текущий элемент совпадает с выбором пользователя
@@ -77,7 +77,7 @@ void SelectDialog(Me* usr)
                     choice--;
                 break;
             case KEY_DOWN:
-                if ( choice != usr->list_of_user.size() - 1) //Если возможно, переводим указатель вниз
+                if ( choice != stdscr->_maxy - 1) //Если возможно, переводим указатель вниз
                     choice++;
                 break;
             case KEY_RIGHT:
@@ -86,7 +86,8 @@ void SelectDialog(Me* usr)
                     usr->list_of_user[choice].GetMessageHistory(0, 200);
                 }
                 current_user = usr->list_of_user[choice];
-                PrintNewMessages(stdscr, usr->list_of_user[choice]);
+                PrintNewMessages(stdscr);
+                PrintNewMessages(stdscr);
                 current_user = usr->list_of_user[choice];
                 flag = false;
                 break;
@@ -100,7 +101,6 @@ void SelectDialog(Me* usr)
 std::string getstring(bool t, WINDOW* scr)
 {
     std::string input;
-    int x, y;
 
     // let the terminal do the line editing
     nocbreak();
@@ -112,7 +112,6 @@ std::string getstring(bool t, WINDOW* scr)
     // this reads from buffer after <ENTER>, not "raw"
     // so any backspacing etc. has already been taken care of
     int ch = wgetch(scr);
-    getyx(scr, y, x);
     while ( ch != '\n' )
     {
         input.push_back( ch );
@@ -156,24 +155,24 @@ std::string getstring(bool t, WINDOW* scr, Me* usr)
 }
 
 
-void PrintNewMessages(WINDOW* windowTest, User currentuser) {
+void PrintNewMessages(WINDOW* windowTest) {
     int x, y;
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
     wclear(stdscr);
     wmove(stdscr, 0, 0);
-    for (int j = currentuser.list_of_messages.size()-1; j >= 0; j--)
+    for (int j = 0 ; j <  current_user.list_of_messages.size(); j++)
     {
         test.lock();
-        if (currentuser.list_of_messages[j].fromMe)
+        if (current_user.list_of_messages[j].fromMe)
         {
             attron(COLOR_PAIR(1));
             wscrl(stdscr, 1);
             mvwprintw(stdscr, stdscr->_maxy - 2, 0,
                       "%s >> %s :: %d",
-                      currentuser.GetFirstName().c_str(),
-                      currentuser.list_of_messages[j].text.c_str(),
-                      currentuser.list_of_messages[j].fromMe);
+                      current_user.GetFirstName().c_str(),
+                      current_user.list_of_messages[j].text.c_str(),
+                      current_user.list_of_messages[j].fromMe);
             attroff(COLOR_PAIR(1));
             wrefresh(stdscr);
         }
@@ -183,16 +182,16 @@ void PrintNewMessages(WINDOW* windowTest, User currentuser) {
             wscrl(stdscr, 1);
             wmove(stdscr, stdscr->_maxy - 2, 0);
             wprintw(stdscr, "%s >> %s :: %d",
-                    currentuser.GetFirstName().c_str(),
-                    currentuser.list_of_messages[j].text.c_str(),
-                    currentuser.list_of_messages[j].fromMe);
+                    current_user.GetFirstName().c_str(),
+                    current_user.list_of_messages[j].text.c_str(),
+                    current_user.list_of_messages[j].fromMe);
             wrefresh(stdscr);
             attroff(COLOR_PAIR(2));
         }
         test.unlock();
-        currentuser.list_of_messages[j].is_new = false;
+        current_user.list_of_messages[j].is_new = false;
     }
-    currentuser.SetNewMessages(false);
+    current_user.SetNewMessages(false);
  }
 
 
@@ -221,7 +220,7 @@ void ShowMessages(Me* usr, LongPollSession* longPollSession, WINDOW* windowTest)
                 {
                     for (int j = 0; j < usr->list_of_user[k].list_of_messages.size(); j++)
                     {
-                        if (usr->list_of_user[k].list_of_messages[j].is_new == true)
+                        if (usr->list_of_user[k].list_of_messages[j].is_new)
                         {
                             getyx(windowTest, y, x);
                             if (current_user.list_of_messages[j].fromMe)
@@ -275,11 +274,13 @@ int main()
     std::string password;
     cbreak();
     getmaxyx(stdscr, row, col);
+    mvwprintw(stdscr, row / 2 - 1, (col - strlen("Введите пароль: ")) / 2, "%s", "Введите номер телефона: ");
+    std::string username = getstring(true, stdscr);
     mvwprintw(stdscr, row / 2, (col - strlen("Введите пароль: ")) / 2, "%s", "Введите пароль: ");
     wmove(stdscr, row / 2, (col - strlen("Введите пароль: ")) / 2 + 16);
     wrefresh(stdscr);
     password = getstring(false, stdscr);
-    VK_API vk_api = VK_API("89998132952", password);
+    VK_API vk_api = VK_API(username, password);
     while(true)
     {
         if (vk_api.Authorize())
@@ -301,15 +302,13 @@ int main()
             thr.detach();
             current_user = usr.GetUserByFullName(usr.GetNameById(usr.GetId()));
             current_user.GetMessageHistory(0, 200);
-            PrintNewMessages(windowTest, current_user);
+            PrintNewMessages(windowTest);
             int id = 0;
             std::string tmpStr;
             col_to_move = current_user.GetFirstName().length() / 2 + 4; // Кусачев Андрей >>
             wprintw(windowTest, "%s >> ", current_user.GetFirstName().c_str());
             while(true)
             {
-//                wrefresh(windowTest);
-//                wmove(windowTest,0, 0);
                 wmove(windowTest,0, col_to_move);
                 wclrtoeol(windowTest);
                 wrefresh(windowTest);
@@ -334,9 +333,9 @@ int main()
                                 usr.list_of_user[i].GetMessageHistory(0, 200);
                             }
                             current_user = usr.list_of_user[i];
-                            PrintNewMessages(stdscr, usr.list_of_user[i]);
+                            PrintNewMessages(stdscr);
                             wclear(stdscr);
-                            PrintNewMessages(stdscr, usr.list_of_user[i]);
+                            PrintNewMessages(stdscr);
                             col_to_move = current_user.GetFirstName().length() / 2 + 4;
                             interrupt = false;
                             break;
@@ -366,18 +365,19 @@ int main()
             wrefresh(stdscr);
 //            std::cout << "ERROR: " + vk_api.error + " :: " + vk_api.error_description << std::endl;
             if (vk_api.needCaptcha) {
-                wmove(stdscr, row/2, col/2 - 20);
+                wmove(stdscr, row/2, col/2 - 21);
                 wprintw(stdscr, "Captcha sid :: %s ", vk_api.captcha.captcha_sid.c_str());
-                wmove(stdscr, row/2+1, col/2 - 20);
+                wmove(stdscr, row/2+1, col/2 - 21);
                 wprintw(stdscr, "Captcha img :: %s ", vk_api.captcha.captcha_img.c_str());
-                wmove(stdscr, row/2+2, col/2 - 20);
+                wmove(stdscr, row/2+2, col/2 - 21);
                 wprintw(stdscr, "Input Captcha key: ");
                 wrefresh(stdscr);
                 vk_api.captcha.captcha_key = getstring(true, stdscr);
+                wclear(stdscr);
             }
         }
     }
     return 0;
 }
 
-//g++ -std=c++11 FunctionsFile.cpp Me.cpp LongPollSession.cpp main.cpp Messages.cpp User.cpp VK_API.cpp -o main -pthread -lcurl -lcurlpp -lncursesw
+//g++  -std=c++11 main.cpp Messages.cpp LongPollSession.cpp Me.cpp User.cpp VK_API.cpp FunctionsFile.cpp -o main -lcurlpp -lcurl -lncursesw -lpthread

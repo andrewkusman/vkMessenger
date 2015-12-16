@@ -12,7 +12,7 @@
 
 class User
 {
-private:
+protected:
     bool online = false;
     std::string first_name;
     std::string last_name;

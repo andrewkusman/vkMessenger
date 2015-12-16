@@ -13,15 +13,11 @@
 #include <ctime>
 #include <algorithm>
 
-class Me
+class Me : User
 {
 private:
-    bool online = false;
-    std::string first_name;
-    std::string last_name;
     bool new_messages = false;
     int friends_count;
-    int id;
     std::string access_token;
 public:
     Me(VK_API);

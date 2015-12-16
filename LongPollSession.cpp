@@ -101,11 +101,7 @@ bool LongPollSession::GetLongPollServer()
     if(tmp.HasMember("ts")) {
         this->Response.ts = tmp["ts"].GetInt();
     }
-    if(tmp.HasMember("failed"))
-    {
-        return false;
-    }
-    return true;
+    return tmp.HasMember("failed") ? false : true;
 }
 
 void LongPollSession::MakeUrl()  //When we're creating new object, we have to refresh url, i can do it in
