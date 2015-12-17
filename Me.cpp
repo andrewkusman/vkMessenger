@@ -93,6 +93,7 @@ bool Me::IncMessagesSort(Messages newMessage)
         {
             this->new_messages = true;
             this->list_of_user[i].list_of_messages.push_back(newMessage);
+            this->list_of_user[i].SetNewMessages(true);
             if(!newMessage.fromMe)
             {
                 this->list_of_user[i].SetNewMessages(true);

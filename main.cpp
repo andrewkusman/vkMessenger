@@ -45,6 +45,7 @@ void PrintNewMessages(WINDOW* windowTest);
 void SelectDialog(Me* usr)
 {
     bool flag = true;
+    interrupt = true;
     unsigned choice = 0; //Выбор пользователя
     scrollok(stdscr, false);
     curs_set(0); //"Убиваем" курсор
@@ -97,6 +98,7 @@ void SelectDialog(Me* usr)
     wclear(stdscr);
     scrollok(stdscr, true);
     nocbreak();
+    interrupt = false;
 }
 
 std::string getstring(bool t, WINDOW* scr)
@@ -202,62 +204,81 @@ void ShowMessages(Me* usr, LongPollSession* longPollSession, WINDOW* windowTest)
 {
     int x, y;
     std::string buffer;
+    bool newMes = false;
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
+    init_pair(3, COLOR_RED, COLOR_BLACK);
 
     while(true)
     {
+        if (!longPollSession->queueOfMessages.empty())
+        {
+            test.lock();
+            usr->IncMessagesSort(longPollSession->queueOfMessages.front());
+            longPollSession->queueOfMessages.pop();
+            test.unlock();
+        }
         if(!interrupt)
         {
-            if (!longPollSession->queueOfMessages.empty())
-            {
-                test.lock();
-                usr->IncMessagesSort(longPollSession->queueOfMessages.front());
-                longPollSession->queueOfMessages.pop();
-                test.unlock();
-            }
             for (int k = 0; k < usr->list_of_user.size(); k++)
             {
-                if (usr->list_of_user[k].NewMessages() &&
-                    usr->list_of_user[k].GetFullName().compare(current_user.GetFullName()) == 0)
+                if (usr->list_of_user[k].NewMessages())
                 {
-                    for (int j = 0; j < usr->list_of_user[k].list_of_messages.size(); j++)
+                    if (usr->list_of_user[k].GetFullName().compare(current_user.GetFullName()) == 0)
                     {
-                        if (usr->list_of_user[k].list_of_messages[j].is_new)
+                        for (int j = 0; j < usr->list_of_user[k].list_of_messages.size(); j++)
                         {
-                            getyx(windowTest, y, x);
-                            if (current_user.list_of_messages[j].fromMe)
+                            if (usr->list_of_user[k].list_of_messages[j].is_new)
                             {
-                                attron(COLOR_PAIR(1));
-                                wscrl(stdscr, 1);
-                                mvwprintw(stdscr, stdscr->_maxy - 2, 0,
-                                          "%s >> %s :: %d",
-                                          usr->list_of_user[k].GetFirstName().c_str(),
-                                          usr->list_of_user[k].list_of_messages[j].text.c_str(),
-                                          usr->list_of_user[k].list_of_messages[j].fromMe);
-                                attroff(COLOR_PAIR(1));
-                                wrefresh(stdscr);
+                                getyx(windowTest, y, x);
+                                if (current_user.list_of_messages[j].fromMe)
+                                {
+                                    attron(COLOR_PAIR(1));
+                                    wscrl(stdscr, 1);
+                                    mvwprintw(stdscr, stdscr->_maxy - 2, 0,
+                                              "%s >> %s :: %d",
+                                              usr->list_of_user[k].GetFirstName().c_str(),
+                                              usr->list_of_user[k].list_of_messages[j].text.c_str(),
+                                              usr->list_of_user[k].list_of_messages[j].fromMe);
+                                    attroff(COLOR_PAIR(1));
+                                    wrefresh(stdscr);
+                                }
+                                else
+                                {
+                                    attron(COLOR_PAIR(2));
+                                    wscrl(stdscr, 1);
+                                    wmove(stdscr, stdscr->_maxy - 2, 0);
+                                    wprintw(stdscr, "%s >> %s :: %d",
+                                            usr->list_of_user[k].GetFirstName().c_str(),
+                                            usr->list_of_user[k].list_of_messages[j].text.c_str(),
+                                            usr->list_of_user[k].list_of_messages[j].fromMe);
+                                    wrefresh(stdscr);
+                                    attroff(COLOR_PAIR(2));
+                                }
+                                if(newMes)
+                                {
+                                    attron(3);
+                                }
+                                wmove(windowTest, 0, 0);
+                                wprintw(windowTest, "%s >> ", usr->list_of_user[k].GetFirstName().c_str());
+                                wrefresh(windowTest);
+                                wmove(windowTest, y, x);
+                                usr->list_of_user[k].list_of_messages[j].is_new = false;
+                                attroff(3);
                             }
-                            else
-                            {
-                                attron(COLOR_PAIR(2));
-                                wscrl(stdscr, 1);
-                                wmove(stdscr, stdscr->_maxy - 2, 0);
-                                wprintw(stdscr, "%s >> %s :: %d",
-                                        usr->list_of_user[k].GetFirstName().c_str(),
-                                        usr->list_of_user[k].list_of_messages[j].text.c_str(),
-                                        usr->list_of_user[k].list_of_messages[j].fromMe);
-                                wrefresh(stdscr);
-                                attroff(COLOR_PAIR(2));
-                            }
-                            wmove(windowTest, 0, 0);
-                            wprintw(windowTest, "%s >> ", usr->list_of_user[k].GetFirstName().c_str());
-                            wrefresh(windowTest);
-                            wmove(windowTest, y, x);
-                            usr->list_of_user[k].list_of_messages[j].is_new = false;
                         }
+                        usr->list_of_user[k].SetNewMessages(false);
                     }
-                    usr->list_of_user[k].SetNewMessages(false);
+                    else
+                    {
+                        newMes = true;
+                        attron(3);
+                        wmove(windowTest, 0, 0);
+                        wprintw(windowTest, "%s >> ", usr->list_of_user[k].GetFirstName().c_str());
+                        wrefresh(windowTest);
+                        wmove(windowTest, y, x);
+                        attroff(3);
+                    }
                 }
             }
         }
@@ -269,7 +290,6 @@ int main()
 {
     setlocale(LC_ALL, "");
     initscr();
-//    wresize(stdscr, 30, 60);
     start_color();
     init_pair(1,COLOR_WHITE, COLOR_BLACK);
     bkgd(COLOR_PAIR(1));
@@ -320,41 +340,22 @@ int main()
                 if(tmpStr.compare("изменить адресата") == 0)
                 {
                     interrupt = true;
-//                    wmove(windowTest, 0, 0);
-//                    wclrtoeol(windowTest);
-//                    wrefresh(windowTest);
-//                    wprintw(windowTest, "Укажите нового адресата: ");
-//                    wrefresh(windowTest);
-//                    std::string tmp = getstring(true, windowTest);
-//                    wrefresh(windowTest);
-//                    for(int i = 0; i < usr.list_of_user.size(); i++)
-//                    {
-//                        if (usr.list_of_user[i].GetFullName().compare(tmp) == 0)
-//                        {
-//                            if(!usr.list_of_user[i].loaded_history)
-//                            {
-//                                usr.list_of_user[i].GetMessageHistory(0, 200);
-//                            }
-//                            current_user = usr.list_of_user[i];
-//                            current_user = usr.list_of_user[1];
-                            PrintNewMessages(stdscr);
-                            wclear(stdscr);
-                            PrintNewMessages(stdscr);
-                            col_to_move = current_user.GetFirstName().length() / 2 + 4;
-                            interrupt = false;
-//                            break;
-//                        }
-//                    }
+                    PrintNewMessages(stdscr);
+                    wclear(stdscr);
+                    PrintNewMessages(stdscr);
+                    col_to_move = current_user.GetFirstName().length() / 2 + 4;
+                    interrupt = false;
                 }
                 else
                 {
-//            std::cout << "Sent " << std::endl;
                     if(usr.MessageSent(current_user.GetId(), tmpStr))
                     {
                         wmove(windowTest, 0, col_to_move);
                     }
                     else
-                        std::cout << "Pizdec" << std::endl;
+                    {
+                        //ignored
+                    }
                 }
                 wmove(windowTest,0, 0);
                 wclrtoeol(windowTest);
@@ -367,7 +368,6 @@ int main()
             wmove(stdscr, row/2-1, col/2 - 20);
             wprintw(stdscr, "ERROR: %s :: %s \n", vk_api.error.c_str(), vk_api.error_description.c_str());
             wrefresh(stdscr);
-//            std::cout << "ERROR: " + vk_api.error + " :: " + vk_api.error_description << std::endl;
             if (vk_api.needCaptcha) {
                 wmove(stdscr, row/2, col/2 - 21);
                 wprintw(stdscr, "Captcha sid :: %s ", vk_api.captcha.captcha_sid.c_str());
@@ -379,8 +379,11 @@ int main()
                 vk_api.captcha.captcha_key = getstring(true, stdscr);
                 wclear(stdscr);
             }
+            getch();
+            break;
         }
     }
+    endwin();
     return 0;
 }
 
