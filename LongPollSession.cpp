@@ -84,6 +84,7 @@ bool LongPollSession::GetLongPollServer()
     MakeUrl();
     rapidjson::Document document;
     std::string response = GetResponseString(this->urlForLongPoll);
+    std::cout << response << std::endl;
     if(response == "")
     {
         return false;

@@ -44,14 +44,12 @@ void PrintNewMessages(WINDOW* windowTest);
 
 void SelectDialog(Me* usr)
 {
-    initscr();
     bool flag = true;
     unsigned choice = 0; //Выбор пользователя
     scrollok(stdscr, false);
     curs_set(0); //"Убиваем" курсор
     //Включаем режим удобной работы с функциональными клавишами, другими словами KEY_UP и KEY_DOWN без этого не работали бы
     keypad(stdscr, true);
-    interrupt = true;
     while ( flag )
     {
         clear();
@@ -65,7 +63,12 @@ void SelectDialog(Me* usr)
             {
                 addch(' '); //Иначе выводим " ", для равновесия
             }
-            printw("%s\n", usr->list_of_user[i].GetFullName().c_str());
+            if(usr->list_of_user[i].new_messages)
+            {
+                printw("%s (1)\n", usr->list_of_user[i].GetFullName().c_str());
+            }
+            else
+                printw("%s\n", usr->list_of_user[i].GetFullName().c_str());
 
         }
 
@@ -86,16 +89,14 @@ void SelectDialog(Me* usr)
                     usr->list_of_user[choice].GetMessageHistory(0, 200);
                 }
                 current_user = usr->list_of_user[choice];
-                PrintNewMessages(stdscr);
-                PrintNewMessages(stdscr);
-                current_user = usr->list_of_user[choice];
                 flag = false;
                 break;
         }
     }
-    interrupt = false;
-    nocbreak();
+    curs_set(1);
     wclear(stdscr);
+    scrollok(stdscr, true);
+    nocbreak();
 }
 
 std::string getstring(bool t, WINDOW* scr)
@@ -144,6 +145,7 @@ std::string getstring(bool t, WINDOW* scr, Me* usr)
         if(ch == '\t')
         {
             SelectDialog(usr);
+            return "изменить адресата";
         }
         input.push_back( ch );
         wrefresh(scr);
@@ -160,6 +162,7 @@ void PrintNewMessages(WINDOW* windowTest) {
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
     wclear(stdscr);
+    wclear(windowTest);
     wmove(stdscr, 0, 0);
     for (int j = 0 ; j <  current_user.list_of_messages.size(); j++)
     {
@@ -274,13 +277,13 @@ int main()
     std::string password;
     cbreak();
     getmaxyx(stdscr, row, col);
-    mvwprintw(stdscr, row / 2 - 1, (col - strlen("Введите пароль: ")) / 2, "%s", "Введите номер телефона: ");
-    std::string username = getstring(true, stdscr);
-    mvwprintw(stdscr, row / 2, (col - strlen("Введите пароль: ")) / 2, "%s", "Введите пароль: ");
-    wmove(stdscr, row / 2, (col - strlen("Введите пароль: ")) / 2 + 16);
-    wrefresh(stdscr);
-    password = getstring(false, stdscr);
-    VK_API vk_api = VK_API(username, password);
+//    mvwprintw(stdscr, row / 2 - 1, (col - strlen("Введите пароль: ")) / 2, "%s", "Введите номер телефона: ");
+//    std::string username = getstring(true, stdscr);
+//    mvwprintw(stdscr, row / 2, (col - strlen("Введите пароль: ")) / 2, "%s", "Введите пароль: ");
+//    wmove(stdscr, row / 2, (col - strlen("Введите пароль: ")) / 2 + 16);
+//    wrefresh(stdscr);
+//    password = getstring(false, stdscr);
+    VK_API vk_api = VK_API("89998132952", "T511baa927nk");
     while(true)
     {
         if (vk_api.Authorize())
@@ -316,31 +319,32 @@ int main()
                 wrefresh(windowTest);
                 if(tmpStr.compare("изменить адресата") == 0)
                 {
-                    wmove(windowTest, 0, 0);
-                    wclrtoeol(windowTest);
-                    wrefresh(windowTest);
-                    wprintw(windowTest, "Укажите нового адресата: ");
-                    wrefresh(windowTest);
-                    std::string tmp = getstring(true, windowTest);
-                    wrefresh(windowTest);
-                    for(int i = 0; i < usr.list_of_user.size(); i++)
-                    {
-                        if (usr.list_of_user[i].GetFullName().compare(tmp) == 0)
-                        {
-                            interrupt = true;
-                            if(!usr.list_of_user[i].loaded_history)
-                            {
-                                usr.list_of_user[i].GetMessageHistory(0, 200);
-                            }
-                            current_user = usr.list_of_user[i];
+                    interrupt = true;
+//                    wmove(windowTest, 0, 0);
+//                    wclrtoeol(windowTest);
+//                    wrefresh(windowTest);
+//                    wprintw(windowTest, "Укажите нового адресата: ");
+//                    wrefresh(windowTest);
+//                    std::string tmp = getstring(true, windowTest);
+//                    wrefresh(windowTest);
+//                    for(int i = 0; i < usr.list_of_user.size(); i++)
+//                    {
+//                        if (usr.list_of_user[i].GetFullName().compare(tmp) == 0)
+//                        {
+//                            if(!usr.list_of_user[i].loaded_history)
+//                            {
+//                                usr.list_of_user[i].GetMessageHistory(0, 200);
+//                            }
+//                            current_user = usr.list_of_user[i];
+//                            current_user = usr.list_of_user[1];
                             PrintNewMessages(stdscr);
                             wclear(stdscr);
                             PrintNewMessages(stdscr);
                             col_to_move = current_user.GetFirstName().length() / 2 + 4;
                             interrupt = false;
-                            break;
-                        }
-                    }
+//                            break;
+//                        }
+//                    }
                 }
                 else
                 {
@@ -380,4 +384,4 @@ int main()
     return 0;
 }
 
-//g++  -std=c++11 main.cpp Messages.cpp LongPollSession.cpp Me.cpp User.cpp VK_API.cpp FunctionsFile.cpp -o main -lcurlpp -lcurl -lncursesw -lpthread
+//g++ -std=c++11 main.cpp Messages.cpp LongPollSession.cpp Me.cpp User.cpp VK_API.cpp FunctionsFile.cpp -o main -lcurlpp -lcurl -lncursesw -lpthread

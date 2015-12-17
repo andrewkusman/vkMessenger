@@ -16,10 +16,10 @@ protected:
     bool online = false;
     std::string first_name;
     std::string last_name;
-    bool new_messages = false;
     int id;
     std::string access_token;
 public:
+    bool new_messages = false;
     int last_message_id;
     bool loaded_history = false;
     std::string GetFullName() const;

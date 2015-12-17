@@ -87,12 +87,18 @@ Me::Me(VK_API tmp)
 
 bool Me::IncMessagesSort(Messages newMessage)
 {
-    for(int i = 0; i < list_of_user.size(); i++)
+    for(int i = 0; i < this->list_of_user.size(); i++)
     {
-        if(list_of_user[i].GetId() == newMessage.from_id)
+        if(this->list_of_user[i].GetId() == newMessage.from_id)
         {
-            list_of_user[i].list_of_messages.push_back(newMessage);
-            list_of_user[i].SetNewMessages(true);
+            this->new_messages = true;
+            this->list_of_user[i].list_of_messages.push_back(newMessage);
+            if(!newMessage.fromMe)
+            {
+                this->list_of_user[i].SetNewMessages(true);
+            }
+            auto it = this->list_of_user.begin() + i;
+            std::rotate(it, this->list_of_user.begin(), it-1);
             return true;
         }
     }
@@ -155,32 +161,3 @@ User Me::GetUserByFullName(std::string fullName) const
     }
 }
 
-std::string Me::GetFirstName() const
-{
-    return this->first_name;
-}
-
-int Me::GetId() const
-{
-    return this->id;
-}
-
-std::string Me::GetLastName() const
-{
-    return this->last_name;
-}
-
-bool Me::IsOnline() const
-{
-    return this->online;
-}
-
-bool Me::NewMessages() const
-{
-    return this->new_messages;
-}
-
-int Me::GetFriendsNumb() const
-{
-    return this->friends_count;
-}
